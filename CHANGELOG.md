@@ -9,6 +9,15 @@ Versions follow [Semantic Versioning](https://semver.org/):
 
 Each release says what changed for users. Upgrades keep your data, settings and backups unless a release says otherwise.
 
+## [1.16.1] — 2026-11-23
+
+### 🔧 Fixed
+- **Automatic AnimeThemes matching failed with "HTTP Error 404: Not Found"** when anime folders carry ID tags from Sonarr, Radarr, Jellyfin or Plex naming, such as `Black Clover (2017) [tvdbid-331753]`, `{tvdb-331753}`, `{imdb-tt7441658}` or `[tmdbid-73223]`. Preludarr now ignores these tags when it looks up a title. This also improves poster, AniDB and theme-source lookups for those folders. Thanks to @axee4 for the report (#22).
+- When AniList simply doesn't know a title, the reason now reads "AniList did not identify the series" instead of an HTTP error.
+
+### ⚠️ Upgrade notes
+- No settings change needed. Titles that failed with the 404 error are retried by the next scheduled run, or right away with **Retry** on the title.
+
 ## [1.16.0] — 2026-11-11
 
 This release brings anime themes back: Preludarr now finds them through AnimeThemes' new API, after its old one stopped answering.
