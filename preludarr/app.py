@@ -688,14 +688,23 @@ def background_poster_worker():
    )
    time.sleep(60)
 
-def clean(name):return re.sub(r'\s*\(\d{4}\)\s*$','',re.sub(r'\s*-\s*imdb-tt\d+\s*$','',name,flags=re.I)).strip()
+# 1.16.1: Sonarr / Radarr / Jellyfin / Plex folder ID tags such as "[tvdbid-331753]", "{tvdb-331753}",
+# "{imdb-tt7441658}" or "[tmdbid-73223]" are not part of the title (issue #22: they were sent to AniList,
+# which found nothing and answered HTTP 404).
+ID_TAG=re.compile(r'\s*[\[{]\s*(?:tvdb|tmdb|imdb|anidb|anilist|mal|tvmaze)(?:id)?\s*[-=:]\s*(?:tt)?\d+\s*[\]}]',re.I)
+def strip_id_tags(name):return ' '.join(ID_TAG.sub(' ',str(name)).split())
+def clean(name):return re.sub(r'\s*\(\d{4}\)\s*$','',re.sub(r'\s*-\s*imdb-tt\d+\s*$','',strip_id_tags(name),flags=re.I)).strip()
 def year(name):
-  m=re.search(r'\((\d{4})\)(?:\s*-\s*imdb-tt\d+)?\s*$',name,flags=re.I)
+  m=re.search(r'\((\d{4})\)(?:\s*-\s*imdb-tt\d+)?\s*$',strip_id_tags(name),flags=re.I)
   return int(m.group(1)) if m else None
 def norm(name):return re.sub(r'[^a-z0-9]','',name.casefold())
 def anilist(name):
  q='query($s:String){Media(search:$s,type:ANIME){seasonYear title{english romaji native} synonyms}}'
- j=request_json('https://graphql.anilist.co',{'query':q,'variables':{'s':clean(name)}})
+ try:
+  j=request_json('https://graphql.anilist.co',{'query':q,'variables':{'s':clean(name)}})
+ except urllib.error.HTTPError as error:
+  if error.code==404:return None  # AniList answers "no such title" with HTTP 404: not identified, not an outage
+  raise
  return (j.get('data') or {}).get('Media')
 
 def anime_theme(name, media):
